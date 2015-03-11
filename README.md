@@ -8,8 +8,9 @@ java -jar EndoExportToKml.jar
 In opened window paste URL from endomondo workout 
 enter KML file name to result 
 
-
+----------
 Po polsku:
+----------
 Export trasy z treningu Endomondo do pliku KML.
 
 Wystarczy uruchomić
