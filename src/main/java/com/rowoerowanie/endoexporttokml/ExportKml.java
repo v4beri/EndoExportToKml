@@ -16,7 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package com.rowerowanie.endoexpkml;
+package com.rowoerowanie.endoexporttokml;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,9 +28,13 @@ import java.net.Proxy;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  *
@@ -112,7 +116,9 @@ public class ExportKml {
     private String proxyHost;
     private Integer proxyPort;
 
-    private InputStream loadData() throws MalformedURLException, IOException {
+    private InputStream loadData(String url) throws MalformedURLException, IOException {
+        System.out.println("łączenie z " + url);
+        
         HttpURLConnection connection ;
         if (StringUtils.isNotBlank(this.proxyHost)) {
             Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(this.proxyHost, proxyPort));
@@ -124,66 +130,70 @@ public class ExportKml {
                                 
         return connection.getInputStream();
     }
-
-    private int stage = 0;
-    private int mode = 0;
-    private Double distance =0.0;
-    private Double alt =0.0;
-    private Double lng;
-    private Double lat;
-
-    private Double parseValueLine(String s) {
-        String[] d = s.split(":");
-        return Double.parseDouble(StringUtils.remove(d[1], ","));
+    
+    private String convertUrl(String u) throws Exception {
+        
+        // https://www.endomondo.com/workouts/562753612/14312735 
+        // https://www.endomondo.com/rest/v1/users/14312735/workouts/562753612
+        
+        
+        String[] arr = u.trim().split("/");
+        if (arr.length >= 4) {
+            String workoutId = arr[arr.length - 1];
+            String userId = arr[arr.length - 2];
+            return String.format("https://www.endomondo.com/rest/v1/users/%s/workouts/%s", new Object[] { workoutId, userId });
+        }
+        else {
+            throw new Exception("Nieprawidłowy adres URL");                    
+        }
     }
 
-    public void exportToKml(String url, String outFile) throws IOException {
-        this.url = url;
-        List<String> kml = new ArrayList<>();
-        List<Point> points = new ArrayList<>();
-        List<String> lines = IOUtils.readLines(loadData());
-
-        for (String line : lines) {
-            if (line.contains("endomondo.AppRegistry.get('draw-workout-controller').draw({")) {
-                stage = 1;
+    public void exportToKml(String url, String outFile)  {
+        try {
+            this.url = url;
+            List<String> kml = new ArrayList<>();
+            List<Point> points = new ArrayList<>();
+            String lines = IOUtils.toString(loadData(convertUrl(url))).trim();
+            
+            JSONObject obj = new JSONObject(lines);
+            
+            
+            System.out.println("Trasa: " + obj.get("id"));
+            
+            JSONArray arr = obj.getJSONObject("points").getJSONArray("points");
+            
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject p = arr.getJSONObject(i);
+                /*p.getString("time");
+                p.getString("latitude");
+                p.getString("longitude");
+                p.getString("altitude");
+                p.getString("duration");*/
+                                
+                
+                points.add(new Point(
+                        p.getDouble("distance"),
+                        p.optDouble("altitude", 0),
+                        p.getDouble("longitude"),
+                        p.getDouble("latitude")));
+                
             }
-            if ((stage == 1) && (line.contains("\"data\": ["))) {
-                stage = 3;
-                mode = 0;
+            
+            
+            if (!points.isEmpty()) {
+                System.out.println("Wygenerowano kml punktów "+ points.size());
+                
+                kml.add(kmlHead);
+                for (Point p : points) {
+                    kml.add(p.toString());
+                }
+                kml.add(kmlFoot);
+                FileUtils.writeLines(new File(outFile), kml);
             }
-            if ((stage == 3) && (line.contains("\"values\": {"))) {
-                mode = 1;
-            }
-
-            if ((stage == 3) && (mode == 1) && (line.contains("\"distance\": "))) {
-                distance = parseValueLine(line);
-            }
-            if ((stage == 3) && (mode == 1) && (line.contains("\"alt\": "))) {
-                alt = parseValueLine(line);
-            }
-            if ((stage == 3) && (mode == 1) && (line.contains("\"lng\": "))) {
-                lng = parseValueLine(line);
-            }
-            if ((stage == 3) && (mode == 1) && (line.contains("\"lat\": "))) {
-                lat = parseValueLine(line);
-
-                System.out.println("lng=" + lng + " lat=" + lat + " alt=" + alt + " dist=" + distance);
-                points.add(new Point(distance, alt, lng, lat));
-            }
-
-            if ((stage == 3) && (mode == 1) && (line.contains("]"))) {
-                mode = 0;
-                stage = 0;
-            }
-        }
-
-        if (!points.isEmpty()) {
-            kml.add(kmlHead);
-            for (Point p : points) {
-                kml.add(p.toString());
-            }
-            kml.add(kmlFoot);
-            FileUtils.writeLines(new File(outFile), kml);
+        } catch (IOException ex) {
+            Logger.getLogger(ExportKml.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (Exception ex) {
+            Logger.getLogger(ExportKml.class.getName()).log(Level.SEVERE, null, ex);
         }
     }    
 }

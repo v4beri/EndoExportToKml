@@ -17,7 +17,7 @@
  * MA 02110-1301  USA
  */
 
-package com.rowerowanie.endoexpkml;
+package com.rowoerowanie.endoexporttokml;
 
 
 public class EndoExportToKml {
@@ -48,6 +48,7 @@ public class EndoExportToKml {
             java.util.logging.Logger.getLogger(MainForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
+       
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
@@ -55,7 +56,7 @@ public class EndoExportToKml {
             public void run() {
                 new MainForm().setVisible(true);
             }
-        });        
+        });       
     }
 
 }

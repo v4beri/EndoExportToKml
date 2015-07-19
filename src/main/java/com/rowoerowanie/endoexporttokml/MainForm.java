@@ -16,7 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package com.rowerowanie.endoexpkml;
+package com.rowoerowanie.endoexporttokml;
 
 import java.io.IOException;
 import java.util.logging.Level;
@@ -131,12 +131,10 @@ public class MainForm extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-         try {                                    
+                                 
            ExportKml endo = new ExportKml();           
            endo.exportToKml(jTextPane1.getText(), jTextPane2.getText());
-        } catch (IOException ex) {
-            Logger.getLogger(EndoExportToKml.class.getName()).log(Level.SEVERE, null, ex);
-        }                
+       
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
